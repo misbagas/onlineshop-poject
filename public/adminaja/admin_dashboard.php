@@ -39,9 +39,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($delete_sql->execute()) {
             $delete_message = '<div class="alert alert-success" role="alert">Product deleted successfully</div>';
-            
+
             // Delete image file
-            $full_image_path = "/var/www/html/online_shop/" . $image_path;
+            $full_image_path = "/var/www/html/online_shop/public/" . $image_path;
             if (file_exists($full_image_path)) {
                 if (unlink($full_image_path)) {
                     $delete_message .= '<div class="alert alert-success" role="alert">Image deleted successfully</div>';
@@ -56,6 +56,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $delete_sql->close();
+        header("Location: admin_dashboard.php?delete_success=1");
+        exit();
     } elseif (isset($_FILES['image'])) {
         // Handle product addition with image upload
         $name = $_POST['name'];
@@ -71,8 +73,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (!in_array(strtolower(pathinfo($target_file, PATHINFO_EXTENSION)), array('jpg', 'jpeg', 'png', 'gif'))) {
             $upload_message = '<div class="alert alert-danger" role="alert">Sorry, only JPG, JPEG, PNG & GIF files are allowed.</div>';
         } elseif (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
-            // If file upload succeeds, proceed with database insertion
-            $image_relative_path = "public/photo_product/" . basename($_FILES["image"]["name"]);
+            chmod($target_file, 0644);
+            $image_relative_path = "photo_product/" . basename($_FILES["image"]["name"]);
 
             // Prepare the SQL statement to insert the new product
             $insert_sql = $conn->prepare("INSERT INTO products (name, description, price, image) VALUES (?, ?, ?, ?)");
@@ -85,6 +87,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $insert_sql->close();
+            header("Location: admin_dashboard.php?upload_success=1");
+            exit();
         } else {
             echo '<pre>';
             echo 'Debugging Info Before Move:';
@@ -152,7 +156,7 @@ $conn->close();
             if ($result && $result->num_rows > 0) {
                 while ($row = $result->fetch_assoc()) {
                     echo '<div class="card">';
-                    echo '<img src="/online_shop/' . $row['image'] . '" class="card-img-top" alt="Product Image">';
+                    echo '<img src="/online_shop/public/photo_product/' . basename($row['image']) . '" class="card-img-top" alt="Product Image">';
                     echo '<div class="card-body">';
                     echo '<h5 class="card-title">' . $row['name'] . '</h5>';
                     echo '<p class="card-text">' . $row['description'] . '</p>';
