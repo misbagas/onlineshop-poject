@@ -1,5 +1,4 @@
 <?php
-// Database connection
 $conn = new mysqli('localhost', 'appuser', 'password', 'online_shop');
 
 // Check connection
