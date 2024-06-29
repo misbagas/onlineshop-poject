@@ -1,8 +1,13 @@
 <?php
 session_start();
 
-// Database connection
-$conn = new mysqli('localhost', 'appuser', 'password', 'online_shop');
+$servername = "172.27.98.229"; // Replace with actual IP address or hostname
+$username = "appuser";
+$password = "@Bagaskara123";
+$database = "online_shop";
+
+// Create connection
+$conn = new mysqli($servername, $username, $password, $database);
 
 // Check connection
 if ($conn->connect_error) {

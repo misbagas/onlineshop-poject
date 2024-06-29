@@ -1,12 +1,4 @@
 <?php
-session_start();
-
-// Redirect to login if user is not authenticated
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit();
-}
-
 // Database connection
 $conn = new mysqli('localhost', 'appuser', 'password', 'online_shop');
 
@@ -156,7 +148,7 @@ $conn->close();
             if ($result && $result->num_rows > 0) {
                 while ($row = $result->fetch_assoc()) {
                     echo '<div class="card">';
-                    echo '<img src="/online_shop/public/photo_product/' . basename($row['image']) . '" class="card-img-top" alt="Product Image">';
+                    echo '<img src="/online_shop/public/' . $row['image'] . '" class="card-img-top" alt="Product Image">';
                     echo '<div class="card-body">';
                     echo '<h5 class="card-title">' . $row['name'] . '</h5>';
                     echo '<p class="card-text">' . $row['description'] . '</p>';
