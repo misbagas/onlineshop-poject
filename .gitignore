@@ -1,0 +1,5 @@
+/vendor/
+/node_modules/
+.env
+*.log
+public/photo_product/  # If you want to exclude uploaded photos
