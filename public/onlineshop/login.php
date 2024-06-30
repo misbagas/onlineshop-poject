@@ -2,8 +2,9 @@
 session_start();
 
 // Database connection
-$conn = new mysqli('localhost', 'appuser', 'password', 'online_shop');
+include_once "db_connect.php";
 
+// Check database connection
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
@@ -21,11 +22,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $sql->fetch();
 
     if ($sql->num_rows > 0 && password_verify($password, $hashed_password)) {
+        // Set session variables
         $_SESSION['user_id'] = $user_id;
-        header("Location: onlineshop.php");
+
+        // Redirect to profile dashboard
+        header("Location: profile.php");
         exit();
     } else {
-        echo "Invalid username or password";
+        $error_message = "Invalid username or password";
     }
     $sql->close();
 }
@@ -101,7 +105,7 @@ $conn->close();
         <?php if (isset($error_message)) : ?>
             <div class="error-message"><?php echo $error_message; ?></div>
         <?php endif; ?>
-        <form method="post" action="login_process.php">
+        <form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
             <div class="form-group">
                 <label for="username">Username:</label>
                 <input type="text" id="username" name="username" required>
@@ -120,4 +124,3 @@ $conn->close();
     </div>
 </body>
 </html>
-

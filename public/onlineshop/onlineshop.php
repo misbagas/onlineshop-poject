@@ -1,15 +1,10 @@
 <?php
-$conn = new mysqli('localhost', 'appuser', 'password', 'online_shop');
-
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+// Include the database connection
+include_once 'db_connect.php';
 
 // Fetch products from database
 $sql_fetch_products = "SELECT * FROM products";
 $result = $conn->query($sql_fetch_products);
-$conn->close();
 ?>
 
 <!DOCTYPE html>

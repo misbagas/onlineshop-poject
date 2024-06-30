@@ -1,4 +1,9 @@
 <?php
+// Enable error reporting
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 // Initialize variables
 $username = "";
 $email = "";
@@ -12,6 +17,11 @@ $allowed_domains = ["mail2tor.com", "torbox3uiot6wchz.onion", "onionmail.info", 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Include database connection
     include_once "db_connect.php";
+
+    // Check database connection
+    if ($conn->connect_error) {
+        die("Connection failed: " . $conn->connect_error);
+    }
 
     // Function to sanitize input values
     function sanitize($data) {
@@ -29,6 +39,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         return false;
     }
 
+    // Function to check if string ends with a substring
+    function endsWith($haystack, $needle) {
+        $length = strlen($needle);
+        if ($length == 0) {
+            return true;
+        }
+        return (substr($haystack, -$length) === $needle);
+    }
+
     // Sanitize and validate username
     if (isset($_POST["username"])) {
         $username = sanitize($_POST["username"]);
@@ -37,6 +56,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $error_message = "Username is required.";
         } elseif (strlen($username) < 4) {
             $error_message = "Username must be at least 4 characters.";
+        }
+
+        // Check if username already exists
+        $sql_check_username = "SELECT id FROM users WHERE username = ?";
+        $stmt_check_username = $conn->prepare($sql_check_username);
+        $stmt_check_username->bind_param("s", $username);
+        $stmt_check_username->execute();
+        $result = $stmt_check_username->get_result();
+        if ($result->num_rows > 0) {
+            $error_message = "Username '$username' is already taken.";
         }
     }
 
@@ -72,31 +101,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // SQL query to insert user into database
         $sql = "INSERT INTO users (username, email, password) VALUES (?, ?, ?)";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("sss", $username, $email, $hashed_password);
-
-        // Execute the prepared statement
-        if ($stmt->execute()) {
-            // Registration successful, redirect to login page
-            header("Location: login.php");
-            exit();
+        if ($stmt) {
+            $stmt->bind_param("sss", $username, $email, $hashed_password);
+            // Execute the prepared statement
+            if ($stmt->execute()) {
+                // Registration successful, redirect to login page
+                header("Location: login.php");
+                exit();
+            } else {
+                // Registration failed
+                $error_message = "Registration failed. Please try again later.";
+            }
+            $stmt->close();
         } else {
-            // Registration failed
-            $error_message = "Registration failed. Please try again later.";
+            $error_message = "Database error. Please try again later.";
         }
-
-        // Close statement and database connection
-        $stmt->close();
-        $conn->close();
     }
-}
 
-// Function to check if string ends with a substring
-function endsWith($haystack, $needle) {
-    $length = strlen($needle);
-    if ($length == 0) {
-        return true;
-    }
-    return (substr($haystack, -$length) === $needle);
+    // Close database connection
+    $conn->close();
 }
 ?>
 
@@ -108,6 +131,7 @@ function endsWith($haystack, $needle) {
     <title>User Registration</title>
     <link rel="stylesheet" href="styles.css"> <!-- Add your custom stylesheet -->
     <style>
+        /* Add your custom CSS styles here */
         body {
             font-family: Arial, sans-serif;
             background-color: #f0f0f0;
@@ -170,6 +194,11 @@ function endsWith($haystack, $needle) {
             text-decoration: none;
         }
     </style>
+    <script>
+        function showHint(message) {
+            alert(message);
+        }
+    </script>
 </head>
 <body>
     <div class="container">
@@ -185,7 +214,6 @@ function endsWith($haystack, $needle) {
             <div class="form-group">
                 <label for="email">Email:</label>
                 <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($email); ?>" required>
-    
             </div>
             <div class="form-group">
                 <label for="password">Password:</label>

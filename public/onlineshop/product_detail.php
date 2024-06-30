@@ -1,12 +1,8 @@
 <?php
 session_start();
 
-$conn = new mysqli('localhost', 'appuser', 'password', 'online_shop');
-
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+// Include the database connection
+include_once 'db_connect.php';
 
 // Check if product ID is set
 if (!isset($_GET['product_id'])) {
@@ -16,19 +12,21 @@ if (!isset($_GET['product_id'])) {
 
 $product_id = $_GET['product_id'];
 
-// Fetch product details from database
+// Fetch product details from the database
 $sql_fetch_product = $conn->prepare("SELECT * FROM products WHERE id = ?");
 $sql_fetch_product->bind_param('i', $product_id);
 $sql_fetch_product->execute();
 $result = $sql_fetch_product->get_result();
 $product = $result->fetch_assoc();
-$conn->close();
 
 // Check if product exists
 if (!$product) {
     echo "Product not found.";
     exit();
 }
+
+$sql_fetch_product->close();
+$conn->close();
 ?>
 
 <!DOCTYPE html>
