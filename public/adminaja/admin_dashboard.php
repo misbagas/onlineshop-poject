@@ -67,6 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stock = $_POST['stock'];
         $categories = $_POST['categories'];
         $tags = $_POST['tags'];
+        $shipping_destination = $_POST['shipping_destination'];
 
         $target_dir = "/var/www/html/online_shop/public/photo_product/";
         $target_file = $target_dir . basename($_FILES["image"]["name"]);
@@ -87,8 +88,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $image_relative_path = "photo_product/" . basename($_FILES["image"]["name"]);
 
             // Prepare the SQL statement to insert the new product
-            $insert_sql = $conn->prepare("INSERT INTO products (name, description, price, image, stock, categories, tags) VALUES (?, ?, ?, ?, ?, ?, ?)");
-            $insert_sql->bind_param('ssdssss', $name, $description, $price, $image_relative_path, $stock, $categories, $tags);
+            $insert_sql = $conn->prepare("INSERT INTO products (name, description, price, image, stock, categories, tags, shipping_destination) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $insert_sql->bind_param('ssdsssss', $name, $description, $price, $image_relative_path, $stock, $categories, $tags, $shipping_destination);
 
             if ($insert_sql->execute()) {
                 $upload_message = '<div class="alert alert-success" role="alert">Product added successfully</div>';
@@ -117,10 +118,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stock = $_POST['edit_stock'];
         $categories = $_POST['edit_categories'];
         $tags = $_POST['edit_tags'];
+        $shipping_destination = $_POST['shipping_destination'];
 
         // Prepare update query
-        $update_sql = $conn->prepare("UPDATE products SET name = ?, description = ?, price = ?, stock = ?, categories = ?, tags = ? WHERE id = ?");
-        $update_sql->bind_param('ssdisii', $name, $description, $price, $stock, $categories, $tags, $product_id);
+        $update_sql = $conn->prepare("UPDATE products SET name = ?, description = ?, price = ?, stock = ?, categories = ?, tags = ?, shipping_destination = ? WHERE id = ?");
+        $update_sql->bind_param('ssdisssi', $name, $description, $price, $stock, $categories, $tags, $shipping_destination, $product_id);
 
         if ($update_sql->execute()) {
             $edit_message = '<div class="alert alert-success" role="alert">Product updated successfully</div>';
@@ -133,6 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 }
+
 
 // Fetch products from database
 $sql_fetch_products = "SELECT * FROM products";
@@ -150,6 +153,7 @@ $conn->close();
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
+    
     <div class="container">
         <h1 class="mt-4 mb-4">Admin Dashboard</h1>
 
@@ -188,9 +192,14 @@ $conn->close();
                         <small id="tagsHelp" class="form-text text-muted">Enter tags separated by commas (e.g., Tag1, Tag2).</small>
                     </div>
                     <div class="form-group">
+        <label for="shipping_destination">Shipping Destination:</label>
+        <input type="text" class="form-control" id="shipping_destination" name="shipping_destination" required>
+    </div>
+                    <div class="form-group">
                         <label for="image">Image:</label>
                         <input type="file" class="form-control-file" id="image" name="image" required>
                     </div>
+                    
                     <button type="submit" class="btn btn-primary">Add Product</button>
                 </form>
             </div>
@@ -210,7 +219,9 @@ $conn->close();
                     <th>Stock</th>
                     <th>Categories</th>
                     <th>Tags</th>
+                    <th>Shipping Destination</th>
                     <th>Image</th>
+                    
                     <th>Action</th>
                 </tr>
             </thead>
@@ -225,8 +236,11 @@ $conn->close();
                         echo "<td>" . $row["price"] . "</td>";
                         echo "<td>" . $row["stock"] . "</td>";
                         echo "<td>" . $row["categories"] . "</td>";
+                        echo "<td>" . htmlspecialchars($row["shipping_destination"]) . "</td>";
                         echo "<td>" . $row["tags"] . "</td>";
+                        
                         echo "<td><img src='/online_shop/public/" . $row["image"] . "' alt='" . $row["name"] . "' style='max-width: 100px;'></td>";
+                        
                         echo "<td>
                                 <form method='POST'>
                                     <input type='hidden' name='delete_product_id' value='" . $row["id"] . "'>

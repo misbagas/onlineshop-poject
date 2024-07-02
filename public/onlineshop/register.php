@@ -11,7 +11,7 @@ $password = "";
 $error_message = "";
 
 // Allowed email domains
-$allowed_domains = ["mail2tor.com", "torbox3uiot6wchz.onion", "onionmail.info", "danwin1210.de", "sector.city", "protonmail.com"];
+$allowed_domains = ["mail2tor.com", "torbox3uiot6wchz.onion", "onionmail.info", "danwin1210.de", "sector.city"];
 
 // Check if form is submitted
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
