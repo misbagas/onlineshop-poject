@@ -1,8 +1,6 @@
 <?php
 session_start();
-
-// Include the database connection
-include_once 'db_connect.php';
+require_once 'db_connect.php'; // Ensure this path is correct
 
 // Check if product ID is set
 if (!isset($_GET['product_id'])) {
@@ -12,21 +10,19 @@ if (!isset($_GET['product_id'])) {
 
 $product_id = $_GET['product_id'];
 
-// Fetch product details from the database
+// Fetch product details from database
 $sql_fetch_product = $conn->prepare("SELECT * FROM products WHERE id = ?");
 $sql_fetch_product->bind_param('i', $product_id);
 $sql_fetch_product->execute();
 $result = $sql_fetch_product->get_result();
 $product = $result->fetch_assoc();
+$conn->close();
 
 // Check if product exists
 if (!$product) {
     echo "Product not found.";
     exit();
 }
-
-$sql_fetch_product->close();
-$conn->close();
 ?>
 
 <!DOCTYPE html>
@@ -36,21 +32,124 @@ $conn->close();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($product['name']); ?></title>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .product-image {
+            width: 100%;
+            max-width: 400px;
+            margin: auto;
+        }
+        .product-details {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .product-info {
+            flex: 1;
+            margin-left: 20px;
+        }
+        .out-of-stock {
+            color: red;
+        }
+        .price {
+            font-size: 24px;
+            color: #000;
+        }
+        .discounted-price {
+            text-decoration: line-through;
+            color: grey;
+        }
+        .quantity-input {
+            max-width: 80px; /* Adjust the width of the quantity input */
+            text-align: center;
+        }
+        .buy-now-btn {
+            cursor: pointer; /* Change cursor to pointer */
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1 class="mt-4 mb-4"><?php echo htmlspecialchars($product['name']); ?></h1>
-        <div class="card mb-4">
-            <img src="/online_shop/public/photo_product/<?php echo basename($product['image']); ?>" class="card-img-top" alt="Product Image">
-            <div class="card-body">
-                <h5 class="card-title"><?php echo htmlspecialchars($product['name']); ?></h5>
-                <p class="card-text"><?php echo nl2br(htmlspecialchars($product['description'])); ?></p>
-                <p class="card-text">Price: <?php echo htmlspecialchars($product['price']); ?></p>
-                <a href="onlineshop.php" class="btn btn-primary">Back to Shop</a>
+        <div class="product-details mt-4">
+            <div class="product-image">
+                <img src="/online_shop/public/<?php echo htmlspecialchars($product['image']); ?>" alt="Product Image" class="img-fluid">
+            </div>
+            <div class="product-info">
+                <h1><?php echo htmlspecialchars($product['name']); ?></h1>
+                <div class="price-details">
+                    <?php if ($product['stock'] <= 0) : ?>
+                        <p class="out-of-stock">Out of stock</p>
+                    <?php else: ?>
+                        <p>In stock</p>
+                    <?php endif; ?>
+                    <p class="price">USD <?php echo number_format($product['price'], 2); ?> 
+                        <?php if (!empty($product['discounted_price'])) : ?>
+                            <span class="discounted-price">USD <?php echo number_format($product['discounted_price'], 2); ?></span>
+                        <?php endif; ?>
+                    </p>
+                </div>
+                <form action="cart.php" method="post">
+                    <input type="hidden" name="product_id" value="<?php echo htmlspecialchars($product['id']); ?>">
+                    <div class="form-group">
+                        <label for="quantity">Quantity:</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <button type="button" class="btn btn-outline-secondary" id="decrease">-</button>
+                            </div>
+                            <input type="number" name="quantity" id="quantity" value="1" class="form-control quantity-input" min="1" <?php echo $product['stock'] <= 0 ? 'disabled' : ''; ?>>
+                            <div class="input-group-append">
+                                <button type="button" class="btn btn-outline-secondary" id="increase">+</button>
+                            </div>
+                        </div>
+                    </div>
+                    <p>Total Price: <span id="total-price">USD <?php echo number_format($product['price'], 2); ?></span></p>
+                    <button type="submit" class="btn btn-primary buy-now-btn" <?php echo $product['stock'] <= 0 ? 'disabled' : ''; ?>>Buy Now</button>
+                </form>
+                <div class="mt-3">
+                    <a href="#" class="btn btn-outline-secondary">Wishlist</a>
+                </div>
+                <div class="mt-3">
+                    <p>Categories: <?php echo htmlspecialchars($product['categories']); ?></p>
+                    <p>Tags: <?php echo htmlspecialchars($product['tags']); ?></p>
+                </div>
+                <hr>
+                <h3>Description</h3>
+                <p><?php echo nl2br(htmlspecialchars($product['description'])); ?></p>
             </div>
         </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('increase').addEventListener('click', function() {
+            updateQuantity(1);
+        });
+
+        document.getElementById('decrease').addEventListener('click', function() {
+            updateQuantity(-1);
+        });
+
+        function updateQuantity(change) {
+            let quantityInput = document.getElementById('quantity');
+            let currentQuantity = parseInt(quantityInput.value);
+            let newQuantity = currentQuantity + change;
+
+            if (newQuantity < 1) {
+                return; // Prevent quantity from going negative
+            }
+
+            quantityInput.value = newQuantity;
+            updateTotalPrice(newQuantity);
+        }
+
+        function updateTotalPrice(quantity) {
+            let price = <?php echo $product['price']; ?>;
+            let totalPriceElement = document.getElementById('total-price');
+            let totalPrice = price * quantity;
+            totalPriceElement.textContent = 'USD ' + totalPrice.toFixed(2);
+        }
+
+        // Update total price on page load
+        updateTotalPrice(parseInt(document.getElementById('quantity').value));
+    </script>
 </body>
 </html>

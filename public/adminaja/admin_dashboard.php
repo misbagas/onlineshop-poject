@@ -1,5 +1,8 @@
 <?php
-$servername = "172.27.98.229"; // Replace with actual IP address or hostname
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+$servername = "172.27.98.229"; // Replace with your actual database server IP or hostname
 $username = "appuser";
 $password = "@Bagaskara123";
 $database = "online_shop";
@@ -15,6 +18,7 @@ if ($conn->connect_error) {
 // Initialize messages
 $delete_message = '';
 $upload_message = '';
+$edit_message = '';
 
 // Handle product actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -60,9 +64,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $name = $_POST['name'];
         $description = $_POST['description'];
         $price = $_POST['price'];
+        $stock = $_POST['stock'];
+        $categories = $_POST['categories'];
+        $tags = $_POST['tags'];
 
         $target_dir = "/var/www/html/online_shop/public/photo_product/";
         $target_file = $target_dir . basename($_FILES["image"]["name"]);
+
+        // Check and set permissions for the upload directory
+        if (!is_dir($target_dir)) {
+            mkdir($target_dir, 0755, true);
+        }
+        chmod($target_dir, 0755);
 
         // Validate file upload
         if ($_FILES["image"]["size"] > 500000) {
@@ -74,8 +87,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $image_relative_path = "photo_product/" . basename($_FILES["image"]["name"]);
 
             // Prepare the SQL statement to insert the new product
-            $insert_sql = $conn->prepare("INSERT INTO products (name, description, price, image) VALUES (?, ?, ?, ?)");
-            $insert_sql->bind_param('ssds', $name, $description, $price, $image_relative_path);
+            $insert_sql = $conn->prepare("INSERT INTO products (name, description, price, image, stock, categories, tags) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $insert_sql->bind_param('ssdssss', $name, $description, $price, $image_relative_path, $stock, $categories, $tags);
 
             if ($insert_sql->execute()) {
                 $upload_message = '<div class="alert alert-success" role="alert">Product added successfully</div>';
@@ -95,12 +108,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo '</pre>';
             die('File upload failed - check permissions and configuration.');
         }
+    } elseif (isset($_POST['edit_product_id'])) {
+        // Handle product editing
+        $product_id = $_POST['edit_product_id'];
+        $name = $_POST['edit_name'];
+        $description = $_POST['edit_description'];
+        $price = $_POST['edit_price'];
+        $stock = $_POST['edit_stock'];
+        $categories = $_POST['edit_categories'];
+        $tags = $_POST['edit_tags'];
+
+        // Prepare update query
+        $update_sql = $conn->prepare("UPDATE products SET name = ?, description = ?, price = ?, stock = ?, categories = ?, tags = ? WHERE id = ?");
+        $update_sql->bind_param('ssdisii', $name, $description, $price, $stock, $categories, $tags, $product_id);
+
+        if ($update_sql->execute()) {
+            $edit_message = '<div class="alert alert-success" role="alert">Product updated successfully</div>';
+        } else {
+            $edit_message = '<div class="alert alert-danger" role="alert">Error updating product: ' . $update_sql->error . '</div>';
+        }
+
+        $update_sql->close();
+        header("Location: admin_dashboard.php?edit_success=1");
+        exit();
     }
 }
 
 // Fetch products from database
 $sql_fetch_products = "SELECT * FROM products";
 $result = $conn->query($sql_fetch_products);
+
 $conn->close();
 ?>
 
@@ -137,6 +174,20 @@ $conn->close();
                         <input type="text" class="form-control" id="price" name="price" required>
                     </div>
                     <div class="form-group">
+                        <label for="stock">Stock:</label>
+                        <input type="number" class="form-control" id="stock" name="stock" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="categories">Categories:</label>
+                        <input type="text" class="form-control" id="categories" name="categories">
+                        <small id="categoriesHelp" class="form-text text-muted">Enter categories separated by commas (e.g., Category1, Category2).</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="tags">Tags:</label>
+                        <input type="text" class="form-control" id="tags" name="tags">
+                        <small id="tagsHelp" class="form-text text-muted">Enter tags separated by commas (e.g., Tag1, Tag2).</small>
+                    </div>
+                    <div class="form-group">
                         <label for="image">Image:</label>
                         <input type="file" class="form-control-file" id="image" name="image" required>
                     </div>
@@ -148,31 +199,53 @@ $conn->close();
         <!-- Product Display Section -->
         <h2 class="mb-4">Manage Products</h2>
         <?php if (!empty($delete_message)) echo $delete_message; ?>
-        <div class="card-columns">
-            <?php
-            if ($result && $result->num_rows > 0) {
-                while ($row = $result->fetch_assoc()) {
-                    echo '<div class="card">';
-                    echo '<img src="/online_shop/public/' . $row['image'] . '" class="card-img-top" alt="Product Image">';
-                    echo '<div class="card-body">';
-                    echo '<h5 class="card-title">' . $row['name'] . '</h5>';
-                    echo '<p class="card-text">' . $row['description'] . '</p>';
-                    echo '<p class="card-text">Price: ' . $row['price'] . '</p>';
-                    echo '<form method="POST" onsubmit="return confirm(\'Are you sure you want to delete this product?\');">';
-                    echo '<input type="hidden" name="delete_product_id" value="' . $row['id'] . '">';
-                    echo '<button type="submit" class="btn btn-danger">Delete</button>';
-                    echo '</form>';
-                    echo '</div>';
-                    echo '</div>';
-                }
-            } else {
-                echo '<p>No products found.</p>';
-            }
-            ?>
-        </div>
-    </div>
+        <?php if (!empty($edit_message)) echo $edit_message; ?>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th>Categories</th>
+                    <th>Tags</th>
+                    <th>Image</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                if ($result->num_rows > 0) {
+                    while ($row = $result->fetch_assoc()) {
+                        echo "<tr>";
+                        echo "<td>" . $row["id"] . "</td>";
+                        echo "<td>" . $row["name"] . "</td>";
+                        echo "<td>" . $row["description"] . "</td>";
+                        echo "<td>" . $row["price"] . "</td>";
+                        echo "<td>" . $row["stock"] . "</td>";
+                        echo "<td>" . $row["categories"] . "</td>";
+                        echo "<td>" . $row["tags"] . "</td>";
+                        echo "<td><img src='/online_shop/public/" . $row["image"] . "' alt='" . $row["name"] . "' style='max-width: 100px;'></td>";
+                        echo "<td>
+                                <form method='POST'>
+                                    <input type='hidden' name='delete_product_id' value='" . $row["id"] . "'>
+                                    <button type='submit' class='btn btn-danger btn-sm'>Delete</button>
+                                </form>
+<form method='GET' action='/online_shop/public/onlineshop/product_detail.php'>
+    <input type='hidden' name='product_id' value='" . $row["id"] . "'>
+    <button type='submit' class='btn btn-primary btn-sm'>View Details</button>
+</form>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+                              </td>";
+                        echo "</tr>";
+                    }
+                } else {
+                    echo "<tr><td colspan='9' class='text-center'>No products found</td></tr>";
+                }
+                ?>
+            </tbody>
+        </table>
+    </div>
 </body>
 </html>
