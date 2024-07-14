@@ -3,12 +3,12 @@ session_start();
 require_once 'db_connect.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = $_POST['email'];
+    $username = $_POST['username'];
     $password = $_POST['password'];
 
     // Fetch user from database
-    $sql_fetch_user = $conn->prepare("SELECT id, password FROM users WHERE email = ?");
-    $sql_fetch_user->bind_param('s', $email);
+    $sql_fetch_user = $conn->prepare("SELECT id, password FROM users WHERE username = ?");
+    $sql_fetch_user->bind_param('s', $username);
     $sql_fetch_user->execute();
     $result = $sql_fetch_user->get_result();
     $user = $result->fetch_assoc();
@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: onlineshop.php');
         exit();
     } else {
-        echo "Invalid email or password.";
+        echo "Invalid username or password.";
     }
 }
 ?>
@@ -37,14 +37,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <h1 class="mt-4">Login</h1>
         <form method="POST" action="">
             <div class="form-group">
-                <label for="email">Email address</label>
-                <input type="email" class="form-control" id="email" name="email" required>
+                <label for="username">Username</label>
+                <input type="text" class="form-control" id="username" name="username" required>
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
                 <input type="password" class="form-control" id="password" name="password" required>
             </div>
+            
             <button type="submit" class="btn btn-primary">Login</button>
+            <a href="forgot_password.php">Forgot Password?</a>
         </form>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>

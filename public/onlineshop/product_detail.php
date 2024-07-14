@@ -23,6 +23,35 @@ if (!$product) {
     echo "Product not found.";
     exit();
 }
+
+// Handle adding to cart
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
+    $quantity = isset($_POST['quantity']) ? intval($_POST['quantity']) : 1;
+
+    // Validate quantity, ensure it's a positive integer (you can add more validation as needed)
+    if ($quantity <= 0) {
+        $_SESSION['error_message'] = "Invalid quantity.";
+        header("Location: product_detail.php?product_id=$product_id");
+        exit();
+    }
+
+    // Initialize cart if it doesn't exist in session
+    if (!isset($_SESSION['cart'])) {
+        $_SESSION['cart'] = [];
+    }
+
+    // Add product to cart or update quantity if already in cart
+    if (isset($_SESSION['cart'][$product_id])) {
+        $_SESSION['cart'][$product_id]['quantity'] += $quantity;
+    } else {
+        $product['quantity'] = $quantity;
+        $_SESSION['cart'][$product_id] = $product;
+    }
+
+    // Redirect to product detail page or cart page
+    header("Location: product_detail.php?product_id=$product_id&added_to_cart=true");
+    exit();
+}
 ?>
 
 <!DOCTYPE html>
@@ -70,14 +99,14 @@ if (!$product) {
 <body>
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <a class="navbar-brand" href="#">Online Shop</a>
+        <a class="navbar-brand" href="onlineshop.php">Indonesian Product</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item">
-                    <a class="nav-link" href="index.php">Home</a>
+                    <a class="nav-link" href="onlineshop.php">Home</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="about.php">About</a>
@@ -111,7 +140,11 @@ if (!$product) {
             </ul>
         </div>
     </nav>
-
+    <div class="container">
+    <div class="marquee">
+        <marquee behavior="scroll" direction="left">Welcome to our Online Shop!</marquee>
+    </div>
+</div>
     <div class="container">
         <div class="product-details mt-4">
             <div class="product-image">
@@ -131,8 +164,7 @@ if (!$product) {
                         <?php endif; ?>
                     </p>
                 </div>
-                <form action="cart.php" method="post">
-                    <input type="hidden" name="product_id" value="<?php echo htmlspecialchars($product['id']); ?>">
+                <form action="product_detail.php?product_id=<?php echo $product_id; ?>" method="post">
                     <div class="form-group">
                         <label for="quantity">Quantity:</label>
                         <div class="input-group">
@@ -146,7 +178,7 @@ if (!$product) {
                         </div>
                     </div>
                     <p>Total Price: <span id="total-price">USD <?php echo number_format($product['price'], 2); ?></span></p>
-                    <button type="submit" class="btn btn-primary buy-now-btn" <?php echo $product['stock'] <= 0 ? 'disabled' : ''; ?>>Buy Now</button>
+                    <button type="submit" class="btn btn-primary buy-now-btn" name="add_to_cart" <?php echo $product['stock'] <= 0 ? 'disabled' : ''; ?>>Add to Cart</button>
                 </form>
                 <div class="mt-3">
                     <a href="#" class="btn btn-outline-secondary">Wishlist</a>

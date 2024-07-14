@@ -6,12 +6,8 @@ error_reporting(E_ALL);
 
 // Initialize variables
 $username = "";
-$email = "";
 $password = "";
 $error_message = "";
-
-// Allowed email domains
-$allowed_domains = ["mail2tor.com", "torbox3uiot6wchz.onion", "onionmail.info", "danwin1210.de", "sector.city"];
 
 // Check if form is submitted
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -26,26 +22,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Function to sanitize input values
     function sanitize($data) {
         return htmlspecialchars(strip_tags(trim($data)));
-    }
-
-    // Function to check if email ends with allowed domains
-    function endsWithAllowedEmailDomain($email) {
-        global $allowed_domains;
-        foreach ($allowed_domains as $domain) {
-            if (endsWith($email, "@" . $domain)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // Function to check if string ends with a substring
-    function endsWith($haystack, $needle) {
-        $length = strlen($needle);
-        if ($length == 0) {
-            return true;
-        }
-        return (substr($haystack, -$length) === $needle);
     }
 
     // Sanitize and validate username
@@ -69,19 +45,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     }
 
-    // Sanitize and validate email
-    if (isset($_POST["email"])) {
-        $email = sanitize($_POST["email"]);
-        // Validate email (additional validation can be added)
-        if (empty($email)) {
-            $error_message = "Email is required.";
-        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $error_message = "Invalid email format.";
-        } elseif (!endsWithAllowedEmailDomain($email)) {
-            $error_message = "Email provider not allowed. Allowed domains: " . implode(", ", $allowed_domains);
-        }
-    }
-
     // Sanitize and validate password
     if (isset($_POST["password"])) {
         $password = sanitize($_POST["password"]);
@@ -98,15 +61,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // Hash the password
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
+        // Generate a unique authentication code
+        $auth_code = bin2hex(random_bytes(16));
+
         // SQL query to insert user into database
-        $sql = "INSERT INTO users (username, email, password) VALUES (?, ?, ?)";
+        $sql = "INSERT INTO users (username, password, auth_code) VALUES (?, ?, ?)";
         $stmt = $conn->prepare($sql);
         if ($stmt) {
-            $stmt->bind_param("sss", $username, $email, $hashed_password);
+            $stmt->bind_param("sss", $username, $hashed_password, $auth_code);
             // Execute the prepared statement
             if ($stmt->execute()) {
-                // Registration successful, redirect to login page
-                header("Location: login.php");
+                // Display the authentication code to the user
+                echo "<script>alert('Registration successful! Your authentication code is: $auth_code. Please save this code.');</script>";
+                // Redirect to login page
+                echo "<script>window.location.href = 'login.php';</script>";
                 exit();
             } else {
                 // Registration failed
@@ -194,11 +162,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             text-decoration: none;
         }
     </style>
-    <script>
-        function showHint(message) {
-            alert(message);
-        }
-    </script>
 </head>
 <body>
     <div class="container">
@@ -210,10 +173,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <div class="form-group">
                 <label for="username">Username:</label>
                 <input type="text" id="username" name="username" value="<?php echo htmlspecialchars($username); ?>" required>
-            </div>
-            <div class="form-group">
-                <label for="email">Email:</label>
-                <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($email); ?>" required>
             </div>
             <div class="form-group">
                 <label for="password">Password:</label>
