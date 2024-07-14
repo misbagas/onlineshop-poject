@@ -1,28 +1,32 @@
 <?php
 session_start();
-require_once 'db_connect.php';
+include_once "db_connect.php";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = $_POST['username'];
     $password = $_POST['password'];
 
-    // Fetch user from database
-    $sql_fetch_user = $conn->prepare("SELECT id, password FROM users WHERE username = ?");
-    $sql_fetch_user->bind_param('s', $username);
-    $sql_fetch_user->execute();
-    $result = $sql_fetch_user->get_result();
-    $user = $result->fetch_assoc();
+    $sql = $conn->prepare("SELECT id, password, cart FROM users WHERE username = ?");
+    $sql->bind_param('s', $username);
+    $sql->execute();
+    $sql->bind_result($user_id, $hashed_password, $cart_json);
+    $sql->fetch();
+    $sql->close();
 
-    if ($user && password_verify($password, $user['password'])) {
-        // Set session
-        $_SESSION['user_id'] = $user['id'];
-        header('Location: onlineshop.php');
+    if (password_verify($password, $hashed_password)) {
+        $_SESSION['user_id'] = $user_id;
+        $_SESSION['cart'] = $cart_json ? json_decode($cart_json, true) : [];
+
+        header("Location: profile.php");
         exit();
     } else {
-        echo "Invalid username or password.";
+        $error_message = "Invalid username or password.";
     }
 }
+
+$conn->close();
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">

@@ -18,12 +18,48 @@ if ($conn->connect_error) {
 
 // Fetch user information (excluding password)
 $user_id = $_SESSION['user_id'];
-$sql = $conn->prepare("SELECT username, auth_code, password FROM users WHERE id = ?");
+$sql = $conn->prepare("SELECT username, auth_code FROM users WHERE id = ?");
 $sql->bind_param('i', $user_id);
 $sql->execute();
-$sql->bind_result($username, $auth_code, $hashed_password);
+$sql->bind_result($username, $auth_code);
 $sql->fetch();
 $sql->close();
+
+// Get the user's cart (assuming you store the cart in the session)
+$cart = isset($_SESSION['cart']) ? $_SESSION['cart'] : [];
+
+// Handle product removal from cart
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id'])) {
+    $product_id = $_POST['product_id'];
+    
+    // Remove product from session cart
+    if (isset($_SESSION['cart'][$product_id])) {
+        unset($_SESSION['cart'][$product_id]);
+    }
+    
+    // Redirect to avoid resubmission on refresh
+    header("Location: profile.php");
+    exit();
+}
+
+// Handle buy now action
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['buy_now'])) {
+    $product_id = $_POST['product_id'];
+    
+    // Simulate purchase action (update database, log purchase, etc.)
+    // For demonstration purposes, let's assume it's just a log message
+    $product_name = isset($cart[$product_id]['name']) ? $cart[$product_id]['name'] : '';
+    $message = "User $username purchased product: $product_name";
+    // Log this action (you can replace this with actual purchase logic)
+    error_log($message);
+    
+    // Optionally, you can clear the cart after purchase
+    unset($_SESSION['cart'][$product_id]);
+    
+    // Redirect to avoid resubmission on refresh
+    header("Location: profile.php");
+    exit();
+}
 
 $conn->close();
 ?>
@@ -133,7 +169,6 @@ $conn->close();
                 <div class="card-body">
                     <p><strong>Username:</strong> <?php echo htmlspecialchars($username); ?></p>
                     <p><strong>Authentication Code:</strong> <?php echo htmlspecialchars($auth_code); ?></p>
-                    <p><strong>Password (hashed):</strong> <?php echo htmlspecialchars($hashed_password); ?></p>
                 </div>
             </div>
             <div class="card">
@@ -142,11 +177,19 @@ $conn->close();
                 </div>
                 <div class="card-body">
                     <?php if (!empty($cart)) : ?>
-                        <ul class="list-group">
+                        <ul class="list-group" id="cart-list">
                             <?php foreach ($cart as $product_id => $product) : ?>
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
                                     <?php echo htmlspecialchars($product['name']); ?>
                                     <span class="badge badge-primary badge-pill"><?php echo $product['quantity']; ?></span>
+                                    <form action="profile.php" method="post" style="display: inline-block;">
+                                        <input type="hidden" name="product_id" value="<?php echo $product_id; ?>">
+                                        <button type="submit" class="btn btn-sm btn-danger">Remove</button>
+                                    </form>
+                                    <form action="profile.php" method="post" style="display: inline-block;">
+                                        <input type="hidden" name="product_id" value="<?php echo $product_id; ?>">
+                                        <button type="submit" name="buy_now" class="btn btn-sm btn-success ml-2">Buy Now</button>
+                                    </form>
                                 </li>
                             <?php endforeach; ?>
                         </ul>
@@ -187,9 +230,13 @@ $conn->close();
                             <td>' . $product['quantity'] . '</td>
                             <td>USD ' . number_format($subtotal, 2) . '</td>
                             <td>
-                                <form action="cart.php" method="post">
+                                <form action="profile.php" method="post">
                                     <input type="hidden" name="product_id" value="' . $product_id . '">
                                     <button type="submit" class="btn btn-sm btn-danger">Remove</button>
+                                </form>
+                                <form action="profile.php" method="post">
+                                    <input type="hidden" name="product_id" value="' . $product_id . '">
+                                    <button type="submit" name="buy_now" class="btn btn-sm btn-success ml-2">Buy Now</button>
                                 </form>
                             </td>
                         </tr>
