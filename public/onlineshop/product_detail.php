@@ -10,7 +10,7 @@ if (!isset($_GET['product_id'])) {
 
 $product_id = $_GET['product_id'];
 
-// Fetch product details from database
+// Fetch product details from database (simplified for brevity)
 $sql_fetch_product = $conn->prepare("SELECT * FROM products WHERE id = ?");
 $sql_fetch_product->bind_param('i', $product_id);
 $sql_fetch_product->execute();
@@ -48,8 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
         $_SESSION['cart'][$product_id] = $product;
     }
 
-    // Redirect to product detail page or cart page
-    header("Location: product_detail.php?product_id=$product_id&added_to_cart=true");
+    // Redirect to profile.php or keep on product_detail.php
+    header("Location: profile.php");
     exit();
 }
 ?>
@@ -142,15 +142,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
     </nav>
 
     <div class="container">
-        <div class="marquee">
-            <marquee behavior="scroll" direction="left">Welcome to our Online Shop!</marquee>
-        </div>
-    </div>
-
-    <div class="container">
         <?php if (isset($_GET['added_to_cart']) && $_GET['added_to_cart'] == 'true'): ?>
             <div class="alert alert-success" role="alert">
-                Product added to Profile in shopping cart section sucessfully
+                Product added to shopping cart successfully.
             </div>
         <?php endif; ?>
         <div class="product-details mt-4">
@@ -186,6 +180,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
                     </div>
                     <p>Total Price: <span id="total-price">USD <?php echo number_format($product['price'], 2); ?></span></p>
                     <button type="submit" class="btn btn-primary buy-now-btn" name="add_to_cart" <?php echo $product['stock'] <= 0 ? 'disabled' : ''; ?>>Add to Cart</button>
+                </form>
+                <form action="buy_with_bitcoin.php" method="get">
+                    <input type="hidden" name="product_id" value="<?php echo $product_id; ?>">
+                    <input type="hidden" name="product_name" value="<?php echo htmlspecialchars($product['name']); ?>">
+                    <input type="hidden" name="product_price" value="<?php echo $product['price']; ?>">
+                    <button type="submit" class="btn btn-outline-primary mt-2" <?php echo $product['stock'] <= 0 ? 'disabled' : ''; ?>>Buy with Bitcoin</button>
                 </form>
                 <div class="mt-3">
                     <a href="#" class="btn btn-outline-secondary">Wishlist</a>

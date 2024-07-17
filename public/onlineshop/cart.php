@@ -1,56 +1,39 @@
 <?php
 session_start();
-include_once "db_connect.php";
 
 // Check if the user is logged in
 if (!isset($_SESSION['user_id'])) {
+    // If not logged in, redirect to login page
     header("Location: login.php");
     exit();
 }
 
-$user_id = $_SESSION['user_id'];
+// Get the action and product_id from the POST request
+$action = $_POST['action'];
+$product_id = $_POST['product_id'];
 
-// Retrieve the current cart data from the database
-$sql = $conn->prepare("SELECT cart FROM users WHERE id = ?");
-$sql->bind_param('i', $user_id);
-$sql->execute();
-$sql->bind_result($cart_json);
-$sql->fetch();
-$sql->close();
-
-$cart = $cart_json ? json_decode($cart_json, true) : [];
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $product_id = $_POST['product_id'];
-
-    // Add or remove product from the cart
-    if (isset($_POST['remove'])) {
-        // Remove product from cart
-        unset($cart[$product_id]);
-    } else {
-        // Add product to cart
-        $cart[$product_id] = [
-            'name' => $_POST['product_name'],
-            'price' => $_POST['product_price'],
-            'quantity' => $_POST['product_quantity']
-        ];
-
-        // Set success message
-        $_SESSION['cart_message'] = "Your product has been added in the profile section.";
-    }
-
-    // Save updated cart to database
-    $cart_json = json_encode($cart);
-    $sql = $conn->prepare("UPDATE users SET cart = ? WHERE id = ?");
-    $sql->bind_param('si', $cart_json, $user_id);
-    $sql->execute();
-    $sql->close();
+if (!isset($_SESSION['cart'])) {
+    $_SESSION['cart'] = [];
 }
 
-// Close the database connection
-$conn->close();
+$cart = $_SESSION['cart'];
 
-// Redirect back to cart or shop page
-header("Location: onlineshop.php");
+if ($action == 'remove' && isset($cart[$product_id])) {
+    // Remove the product from the cart
+    unset($cart[$product_id]);
+    $_SESSION['cart'] = $cart;
+    header("Location: profile.php");
+    exit();
+} elseif ($action == 'buy' && isset($cart[$product_id])) {
+    // Handle the purchase logic here (e.g., process payment, reduce stock)
+    // For simplicity, we'll just remove the product from the cart
+    unset($cart[$product_id]);
+    $_SESSION['cart'] = $cart;
+    // You can add code here to handle payment processing and order completion
+    header("Location: profile.php?purchase=success");
+    exit();
+}
+
+// Redirect back to profile page if no valid action was taken
+header("Location: profile.php");
 exit();
-?>

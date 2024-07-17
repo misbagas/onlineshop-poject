@@ -136,7 +136,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-
 // Fetch products from database
 $sql_fetch_products = "SELECT * FROM products";
 $result = $conn->query($sql_fetch_products);
@@ -192,74 +191,87 @@ $conn->close();
                         <small id="tagsHelp" class="form-text text-muted">Enter tags separated by commas (e.g., Tag1, Tag2).</small>
                     </div>
                     <div class="form-group">
-        <label for="shipping_destination">Shipping Destination:</label>
-        <input type="text" class="form-control" id="shipping_destination" name="shipping_destination" required>
-    </div>
+                        <label for="shipping_destination">Shipping Destination:</label>
+                        <input type="text" class="form-control" id="shipping_destination" name="shipping_destination">
+                    </div>
                     <div class="form-group">
                         <label for="image">Image:</label>
-                        <input type="file" class="form-control-file" id="image" name="image" required>
+                        <input type="file" class="form-control-file" id="image" name="image">
                     </div>
-                    
                     <button type="submit" class="btn btn-primary">Add Product</button>
                 </form>
             </div>
         </div>
 
-        <!-- Product Display Section -->
-        <h2 class="mb-4">Manage Products</h2>
-        <?php if (!empty($delete_message)) echo $delete_message; ?>
-        <?php if (!empty($edit_message)) echo $edit_message; ?>
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th>Price</th>
-                    <th>Stock</th>
-                    <th>Categories</th>
-                    <th>Tags</th>
-                    <th>Shipping Destination</th>
-                    <th>Image</th>
-                    
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php
-                if ($result->num_rows > 0) {
-                    while ($row = $result->fetch_assoc()) {
-                        echo "<tr>";
-                        echo "<td>" . $row["id"] . "</td>";
-                        echo "<td>" . $row["name"] . "</td>";
-                        echo "<td>" . $row["description"] . "</td>";
-                        echo "<td>" . $row["price"] . "</td>";
-                        echo "<td>" . $row["stock"] . "</td>";
-                        echo "<td>" . $row["categories"] . "</td>";
-                        echo "<td>" . htmlspecialchars($row["shipping_destination"]) . "</td>";
-                        echo "<td>" . $row["tags"] . "</td>";
-                        
-                        echo "<td><img src='/online_shop/public/" . $row["image"] . "' alt='" . $row["name"] . "' style='max-width: 100px;'></td>";
-                        
-                        echo "<td>
-                                <form method='POST'>
-                                    <input type='hidden' name='delete_product_id' value='" . $row["id"] . "'>
-                                    <button type='submit' class='btn btn-danger btn-sm'>Delete</button>
-                                </form>
-<form method='GET' action='/online_shop/public/onlineshop/product_detail.php'>
-    <input type='hidden' name='product_id' value='" . $row["id"] . "'>
-    <button type='submit' class='btn btn-primary btn-sm'>View Details</button>
-</form>
+        <!-- Product List -->
+        <div class="card">
+            <div class="card-header">
+                Product List
+            </div>
+            <div class="card-body">
+                <?php echo $delete_message; ?>
+                <?php echo $edit_message; ?>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                            <th>Categories</th>
+                            <th>Tags</th>
+                            <th>Shipping Destination</th>
+                            <th>Image</th>
+                            <th>Bitcoin Payment Status</th>
+                            <th>Bitcoin Transaction ID</th>
+                            <th>Bitcoin Amount</th>
+                            <th>Bitcoin Payment Time</th>
+                            <th>Bitcoin User Email</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        if ($result->num_rows > 0) {
+                            while ($row = $result->fetch_assoc()) {
+                                echo "<tr>";
+                                echo "<td>" . $row["id"] . "</td>";
+                                echo "<td>" . $row["name"] . "</td>";
+                                echo "<td>" . $row["description"] . "</td>";
+                                echo "<td>" . $row["price"] . "</td>";
+                                echo "<td>" . $row["stock"] . "</td>";
+                                echo "<td>" . $row["categories"] . "</td>";
+                                echo "<td>" . $row["tags"] . "</td>";
+                                echo "<td>" . htmlspecialchars($row["shipping_destination"]) . "</td>";
+                                echo "<td><img src='/online_shop/public/" . $row["image"] . "' alt='" . $row["name"] . "' style='max-width: 100px;'></td>";
+                                echo "<td>" . $row["bitcoin_payment_status"] . "</td>";
+                                echo "<td>" . $row["bitcoin_transaction_id"] . "</td>";
+                                echo "<td>" . $row["bitcoin_amount"] . "</td>";
+                                echo "<td>" . $row["bitcoin_payment_time"] . "</td>";
+                                echo "<td>" . $row["bitcoin_user_email"] . "</td>";
+                                echo "<td>
+                                        <form method='POST'>
+                                            <input type='hidden' name='delete_product_id' value='" . $row["id"] . "'>
+                                            <button type='submit' class='btn btn-danger btn-sm'>Delete</button>
+                                        </form>
+                                        <form method='GET' action='/online_shop/public/onlineshop/product_detail.php'>
+                                            <input type='hidden' name='product_id' value='" . $row["id"] . "'>
+                                            <button type='submit' class='btn btn-primary btn-sm'>View Details</button>
+                                        </form>
+                                      </td>";
+                                echo "</tr>";
+                            }
+                        } else {
+                            echo "<tr><td colspan='14'>No products found</td></tr>";
+                        }
+                        ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-                              </td>";
-                        echo "</tr>";
-                    }
-                } else {
-                    echo "<tr><td colspan='9' class='text-center'>No products found</td></tr>";
-                }
-                ?>
-            </tbody>
-        </table>
     </div>
+
 </body>
 </html>
