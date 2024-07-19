@@ -7,6 +7,7 @@ error_reporting(E_ALL);
 // Initialize variables
 $username = "";
 $password = "";
+$address = "";
 $error_message = "";
 
 // Check if form is submitted
@@ -56,6 +57,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     }
 
+    // Sanitize and validate address
+    if (isset($_POST["address"])) {
+        $address = sanitize($_POST["address"]);
+        // Validate address (optional additional checks can be added)
+        if (empty($address)) {
+            $error_message = "Address is required.";
+        }
+    }
+
     // If no errors, proceed with registration
     if (empty($error_message)) {
         // Hash the password
@@ -65,10 +75,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $auth_code = bin2hex(random_bytes(16));
 
         // SQL query to insert user into database
-        $sql = "INSERT INTO users (username, password, auth_code) VALUES (?, ?, ?)";
+        $sql = "INSERT INTO users (username, password, address, auth_code) VALUES (?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
         if ($stmt) {
-            $stmt->bind_param("sss", $username, $hashed_password, $auth_code);
+            $stmt->bind_param("ssss", $username, $hashed_password, $address, $auth_code);
             // Execute the prepared statement
             if ($stmt->execute()) {
                 // Display the authentication code to the user
@@ -99,7 +109,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <title>User Registration</title>
     <link rel="stylesheet" href="styles.css"> <!-- Add your custom stylesheet -->
     <style>
-        /* Add your custom CSS styles here */
+        /* Your custom CSS styles */
         body {
             font-family: Arial, sans-serif;
             background-color: #f0f0f0;
@@ -147,11 +157,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             color: red;
             margin-bottom: 10px;
         }
-        .hint {
-            color: orange;
-            margin-top: 5px;
-            font-size: 14px;
-        }
         .bottom-text {
             text-align: center;
             margin-top: 15px;
@@ -177,6 +182,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <div class="form-group">
                 <label for="password">Password:</label>
                 <input type="password" id="password" name="password" required>
+            </div>
+            <div class="form-group">
+                <label for="address">Address:</label>
+                <input type="text" id="address" name="address" value="<?php echo htmlspecialchars($address); ?>" required>
             </div>
             <div class="form-group">
                 <button type="submit">Register</button>

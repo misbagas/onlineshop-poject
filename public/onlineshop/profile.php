@@ -8,12 +8,12 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-// Fetch user information (excluding password)
+// Fetch user information (excluding password and only select address additionally)
 $user_id = $_SESSION['user_id'];
-$sql = $conn->prepare("SELECT username, auth_code FROM users WHERE id = ?");
+$sql = $conn->prepare("SELECT username, auth_code, address FROM users WHERE id = ?");
 $sql->bind_param('i', $user_id);
 $sql->execute();
-$sql->bind_result($username, $auth_code);
+$sql->bind_result($username, $auth_code, $address);
 $sql->fetch();
 $sql->close();
 $conn->close();
@@ -33,6 +33,7 @@ $payment_received = isset($_SESSION['payment_received']) ? $_SESSION['payment_re
     <title>Profile Dashboard</title>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        /* Your custom CSS styles */
         body {
             font-family: Arial, sans-serif;
             background-color: #f0f0f0;
@@ -128,7 +129,7 @@ $payment_received = isset($_SESSION['payment_received']) ? $_SESSION['payment_re
                 <div class="card-body">
                     <p><strong>Username:</strong> <?php echo htmlspecialchars($username); ?></p>
                     <p><strong>Authentication Code:</strong> <?php echo htmlspecialchars($auth_code); ?></p>
-                    
+                    <p><strong>Address:</strong> <?php echo htmlspecialchars($address); ?></p>
                 </div>
             </div>
         </div>
